@@ -69,23 +69,11 @@
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { signInWithTwitchToken, type TwitchUser } from "../firebase/auth";
 
-interface TwitchTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  scope: string[];
-  token_type: string;
-}
-
-interface TwitchUserResponse {
-  data: Array<{
-    id: string;
-    login: string;
-    display_name: string;
-    email: string;
-    profile_image_url: string;
-  }>;
+interface FirebaseAuthResponse {
+  customToken: string;
+  twitchUser: TwitchUser;
 }
 
 const router = useRouter();
@@ -97,55 +85,40 @@ const success = ref(false);
 const error = ref(false);
 const errorMessage = ref("");
 
-const exchangeCodeForToken = async (
+const authenticateWithFirebase = async (
   code: string,
   state: string
-): Promise<TwitchTokenResponse> => {
+): Promise<FirebaseAuthResponse> => {
   // Verify state parameter
   const storedState = localStorage.getItem("twitch_auth_state");
   if (state !== storedState) {
     throw new Error("Invalid state parameter");
   }
 
-  const clientId = "your_twitch_client_id"; // Replace with your actual client ID
-  const clientSecret = "your_twitch_client_secret"; // Replace with your actual client secret
-  const redirectUri = `${window.location.origin}/auth/twitch/callback`;
-
-  const response = await fetch("https://id.twitch.tv/oauth2/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code: code,
-      grant_type: "authorization_code",
-      redirect_uri: redirectUri,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Token exchange failed: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const getUserInfo = async (
-  accessToken: string
-): Promise<TwitchUserResponse> => {
-  const clientId = "your_twitch_client_id"; // Replace with your actual client ID
-
-  const response = await fetch("https://api.twitch.tv/helix/users", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Client-Id": clientId,
-    },
-  });
+  // Call Firebase Function to handle Twitch OAuth
+  const response = await fetch(
+    `${
+      import.meta.env.VITE_FIREBASE_FUNCTIONS_URL ||
+      "https://us-central1-ttv-bot-dashboard.cloudfunctions.net"
+    }/twitchAuth`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        state,
+        redirect_uri: `${window.location.origin}/auth/twitch/callback`,
+      }),
+    }
+  );
 
   if (!response.ok) {
-    throw new Error(`User info fetch failed: ${response.statusText}`);
+    const errorData = await response.json();
+    throw new Error(
+      errorData.error || `Authentication failed: ${response.statusText}`
+    );
   }
 
   return response.json();
@@ -166,30 +139,13 @@ const handleTwitchCallback = async () => {
       throw new Error("Missing authorization code or state parameter");
     }
 
-    // Exchange code for access token
-    const tokenResponse = await exchangeCodeForToken(code, state);
+    // Authenticate with Firebase using Twitch OAuth
+    const authResponse = await authenticateWithFirebase(code, state);
 
-    // Get user information
-    const userResponse = await getUserInfo(tokenResponse.access_token);
-    const userData = userResponse.data[0];
-
-    // Store authentication data
-    localStorage.setItem("twitch_access_token", tokenResponse.access_token);
-    localStorage.setItem("twitch_refresh_token", tokenResponse.refresh_token);
-    localStorage.setItem(
-      "twitch_token_expires",
-      (Date.now() + tokenResponse.expires_in * 1000).toString()
-    );
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem(
-      "userProfile",
-      JSON.stringify({
-        id: userData.id,
-        username: userData.display_name || userData.login,
-        email: userData.email,
-        avatar: userData.profile_image_url,
-        loginMethod: "twitch",
-      })
+    // Sign in to Firebase with custom token
+    await signInWithTwitchToken(
+      authResponse.customToken,
+      authResponse.twitchUser
     );
 
     // Clean up state

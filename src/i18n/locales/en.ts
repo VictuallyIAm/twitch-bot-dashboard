@@ -70,6 +70,8 @@ export default {
       "Connect your Twitch account to access your bot dashboard",
     loginWithTwitch: "Login with Twitch",
     twitchSecureNote: "Secure authentication powered by Twitch",
+    loginSuccess: "Successfully authenticated with Twitch!",
+    alreadyLoggedIn: "Already Logged In",
   },
 
   // Dashboard
@@ -138,6 +140,13 @@ export default {
     noBannedWords: "No banned words configured",
     addBannedWord: "Add Banned Word",
     wordToBan: "Word to ban",
+    saveModerationSettings: "Save Moderation Settings",
+    saveChatLimits: "Save Chat Limits",
+    saveBannedWords: "Save Banned Words",
+    moderationSettingsSaved: "Moderation settings saved successfully!",
+    chatLimitsSaved: "Chat limits saved successfully!",
+    bannedWordsSaved: "Banned words saved successfully!",
+    errorSavingSettings: "Error saving settings. Please try again.",
   },
 
   // Analytics
@@ -218,6 +227,10 @@ export default {
     systemPromptHint:
       "Define your bot's personality, role, and behavior guidelines",
     saveAiSettings: "Save AI Settings",
+    saveAiConfiguration: "Save AI Configuration",
+    saveResponseSettings: "Save Response Settings",
+    savePersonalitySettings: "Save Personality Settings",
+    saveSystemPrompt: "Save System Prompt",
     resetToDefaults: "Reset to Defaults",
     testAiResponse: "Test AI Response",
     testMessage: "Test Message",
@@ -229,6 +242,11 @@ export default {
     spotify: "Spotify",
     youtube: "YouTube",
     soundcloud: "SoundCloud",
+    aiConfigurationSaved: "AI configuration saved successfully!",
+    responseSettingsSaved: "Response settings saved successfully!",
+    personalitySettingsSaved: "Personality settings saved successfully!",
+    systemPromptSaved: "System prompt saved successfully!",
+    errorSavingSettings: "Error saving settings. Please try again.",
   },
 
   // Settings
@@ -257,5 +275,17 @@ export default {
     auto: "Auto",
     english: "English",
     russian: "Russian",
+    saveBotSettings: "Save Bot Settings",
+    saveAppearanceSettings: "Save Appearance Settings",
+    saveNotificationSettings: "Save Notification Settings",
+    botSettingsSaved: "Bot settings saved successfully!",
+    appearanceSettingsSaved: "Appearance settings saved successfully!",
+    notificationSettingsSaved: "Notification settings saved successfully!",
+    settingsExported: "Settings exported successfully!",
+    settingsImported: "Settings imported successfully!",
+    settingsReset: "Settings reset to defaults successfully!",
+    errorSavingSettings: "Error saving settings. Please try again.",
+    errorImportingSettings:
+      "Error importing settings. Please check the file format.",
   },
 };

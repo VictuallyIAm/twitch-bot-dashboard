@@ -70,6 +70,8 @@ export default {
       "Подключите свой аккаунт Twitch для доступа к панели управления ботом",
     loginWithTwitch: "Войти через Twitch",
     twitchSecureNote: "Безопасная аутентификация через Twitch",
+    loginSuccess: "Успешная аутентификация через Twitch!",
+    alreadyLoggedIn: "Уже вошли в систему",
   },
 
   // Dashboard
@@ -139,6 +141,13 @@ export default {
     noBannedWords: "Запрещенные слова не настроены",
     addBannedWord: "Добавить Запрещенное Слово",
     wordToBan: "Слово для запрета",
+    saveModerationSettings: "Сохранить Настройки Модерации",
+    saveChatLimits: "Сохранить Ограничения Чата",
+    saveBannedWords: "Сохранить Запрещенные Слова",
+    moderationSettingsSaved: "Настройки модерации успешно сохранены!",
+    chatLimitsSaved: "Ограничения чата успешно сохранены!",
+    bannedWordsSaved: "Запрещенные слова успешно сохранены!",
+    errorSavingSettings: "Ошибка сохранения настроек. Попробуйте еще раз.",
   },
 
   // Analytics
@@ -220,6 +229,10 @@ export default {
     systemPromptHint:
       "Определите личность, роль и рекомендации по поведению бота",
     saveAiSettings: "Сохранить Настройки ИИ",
+    saveAiConfiguration: "Сохранить Конфигурацию ИИ",
+    saveResponseSettings: "Сохранить Настройки Ответов",
+    savePersonalitySettings: "Сохранить Настройки Личности",
+    saveSystemPrompt: "Сохранить Системный Промпт",
     resetToDefaults: "Сбросить к Настройкам по Умолчанию",
     testAiResponse: "Тест Ответа ИИ",
     testMessage: "Тестовое Сообщение",
@@ -231,6 +244,11 @@ export default {
     spotify: "Spotify",
     youtube: "YouTube",
     soundcloud: "SoundCloud",
+    aiConfigurationSaved: "Конфигурация ИИ успешно сохранена!",
+    responseSettingsSaved: "Настройки ответов успешно сохранены!",
+    personalitySettingsSaved: "Настройки личности успешно сохранены!",
+    systemPromptSaved: "Системный промпт успешно сохранен!",
+    errorSavingSettings: "Ошибка сохранения настроек. Попробуйте еще раз.",
   },
 
   // Settings
@@ -259,5 +277,16 @@ export default {
     auto: "Авто",
     english: "Английский",
     russian: "Русский",
+    saveBotSettings: "Сохранить Настройки Бота",
+    saveAppearanceSettings: "Сохранить Настройки Внешнего Вида",
+    saveNotificationSettings: "Сохранить Настройки Уведомлений",
+    botSettingsSaved: "Настройки бота успешно сохранены!",
+    appearanceSettingsSaved: "Настройки внешнего вида успешно сохранены!",
+    notificationSettingsSaved: "Настройки уведомлений успешно сохранены!",
+    settingsExported: "Настройки успешно экспортированы!",
+    settingsImported: "Настройки успешно импортированы!",
+    settingsReset: "Настройки успешно сброшены к значениям по умолчанию!",
+    errorSavingSettings: "Ошибка сохранения настроек. Попробуйте еще раз.",
+    errorImportingSettings: "Ошибка импорта настроек. Проверьте формат файла.",
   },
 };

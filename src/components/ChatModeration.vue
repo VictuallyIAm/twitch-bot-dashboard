@@ -20,34 +20,46 @@
           </v-card-title>
           <v-card-text>
             <v-switch
-              v-model="autoModerationEnabled"
+              v-model="moderationSettings.autoModerationEnabled"
               :label="$t('moderation.enableAutoModeration')"
               color="primary"
               class="mb-4"
             ></v-switch>
 
             <v-switch
-              v-model="blockLinks"
+              v-model="moderationSettings.blockLinks"
               :label="$t('moderation.blockLinks')"
               color="warning"
-              :disabled="!autoModerationEnabled"
+              :disabled="!moderationSettings.autoModerationEnabled"
               class="mb-4"
             ></v-switch>
 
             <v-switch
-              v-model="capsFilter"
+              v-model="moderationSettings.capsFilter"
               :label="$t('moderation.capsFilter')"
               color="warning"
-              :disabled="!autoModerationEnabled"
+              :disabled="!moderationSettings.autoModerationEnabled"
               class="mb-4"
             ></v-switch>
 
             <v-switch
-              v-model="symbolSpamFilter"
+              v-model="moderationSettings.symbolSpamFilter"
               :label="$t('moderation.symbolSpamFilter')"
               color="warning"
-              :disabled="!autoModerationEnabled"
+              :disabled="!moderationSettings.autoModerationEnabled"
+              class="mb-4"
             ></v-switch>
+
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="saveModerationSettings"
+              :loading="savingModeration"
+              :disabled="!hasChanges.moderation"
+              block
+            >
+              {{ $t("moderation.saveModerationSettings") }}
+            </v-btn>
           </v-card-text>
         </v-card>
 
@@ -58,7 +70,7 @@
           </v-card-title>
           <v-card-text>
             <v-text-field
-              v-model.number="slowModeSeconds"
+              v-model.number="chatLimits.slowModeSeconds"
               :label="$t('moderation.slowModeSeconds')"
               type="number"
               variant="outlined"
@@ -68,7 +80,7 @@
             ></v-text-field>
 
             <v-text-field
-              v-model.number="maxMessageLength"
+              v-model.number="chatLimits.maxMessageLength"
               :label="$t('moderation.maxMessageLength')"
               type="number"
               variant="outlined"
@@ -78,13 +90,25 @@
             ></v-text-field>
 
             <v-text-field
-              v-model.number="followersOnlyMinutes"
+              v-model.number="chatLimits.followersOnlyMinutes"
               :label="$t('moderation.followersOnlyMinutes')"
               type="number"
               variant="outlined"
               min="0"
               max="10080"
+              class="mb-4"
             ></v-text-field>
+
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="saveChatLimits"
+              :loading="savingLimits"
+              :disabled="!hasChanges.limits"
+              block
+            >
+              {{ $t("moderation.saveChatLimits") }}
+            </v-btn>
           </v-card-text>
         </v-card>
       </v-col>
@@ -122,7 +146,7 @@
               <p>{{ $t("moderation.noBannedWords") }}</p>
             </div>
 
-            <div v-else>
+            <div v-else class="mb-4">
               <v-chip
                 v-for="word in bannedWords"
                 :key="word"
@@ -135,6 +159,17 @@
                 {{ word }}
               </v-chip>
             </div>
+
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="saveBannedWords"
+              :loading="savingWords"
+              :disabled="!hasChanges.words"
+              block
+            >
+              {{ $t("moderation.saveBannedWords") }}
+            </v-btn>
           </v-card-text>
         </v-card>
 
@@ -193,25 +228,73 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Success Snackbar -->
+    <v-snackbar v-model="showSuccessSnackbar" color="success" timeout="3000">
+      {{ successMessage }}
+      <template v-slot:actions>
+        <v-btn
+          color="white"
+          variant="text"
+          @click="showSuccessSnackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+
+    <!-- Error Snackbar -->
+    <v-snackbar v-model="showErrorSnackbar" color="error" timeout="5000">
+      {{ errorMessage }}
+      <template v-slot:actions>
+        <v-btn color="white" variant="text" @click="showErrorSnackbar = false">
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useI18n } from "vue-i18n";
+import { useAuthStore } from "../stores/auth";
+import { moderationSettings as moderationSettingsAPI } from "../firebase/firestore";
+
+const { t } = useI18n();
+const authStore = useAuthStore();
 
 // Data
-const autoModerationEnabled = ref(true);
-const blockLinks = ref(true);
-const capsFilter = ref(true);
-const symbolSpamFilter = ref(false);
+const showAddWordDialog = ref(false);
+const showSuccessSnackbar = ref(false);
+const showErrorSnackbar = ref(false);
+const successMessage = ref("");
+const errorMessage = ref("");
 
-const slowModeSeconds = ref(0);
-const maxMessageLength = ref(500);
-const followersOnlyMinutes = ref(0);
+// Loading states
+const savingModeration = ref(false);
+const savingLimits = ref(false);
+const savingWords = ref(false);
+
+// Original settings for change detection
+const originalModerationSettings = ref({});
+const originalChatLimits = ref({});
+const originalBannedWords = ref<string[]>([]);
+
+const moderationSettings = ref({
+  autoModerationEnabled: true,
+  blockLinks: true,
+  capsFilter: true,
+  symbolSpamFilter: false,
+});
+
+const chatLimits = ref({
+  slowModeSeconds: 0,
+  maxMessageLength: 500,
+  followersOnlyMinutes: 0,
+});
 
 const newBannedWord = ref("");
-const showAddWordDialog = ref(false);
-
 const bannedWords = ref(["spam", "toxic", "hate"]);
 
 const recentActions = ref([
@@ -252,7 +335,131 @@ const recentActions = ref([
   },
 ]);
 
+// Computed
+const hasChanges = computed(() => ({
+  moderation:
+    JSON.stringify(moderationSettings.value) !==
+    JSON.stringify(originalModerationSettings.value),
+  limits:
+    JSON.stringify(chatLimits.value) !==
+    JSON.stringify(originalChatLimits.value),
+  words:
+    JSON.stringify(bannedWords.value) !==
+    JSON.stringify(originalBannedWords.value),
+}));
+
 // Methods
+const loadModerationSettings = async () => {
+  if (!authStore.user) return;
+
+  try {
+    const settings = await moderationSettingsAPI.get();
+    if (settings) {
+      moderationSettings.value = { ...moderationSettings.value, ...settings };
+      originalModerationSettings.value = { ...moderationSettings.value };
+
+      if (settings.slowMode !== undefined) {
+        chatLimits.value.slowModeSeconds = settings.slowMode;
+      }
+      if (settings.maxMessageLength !== undefined) {
+        chatLimits.value.maxMessageLength = settings.maxMessageLength;
+      }
+      if (settings.followersOnly !== undefined) {
+        chatLimits.value.followersOnlyMinutes = settings.followersOnly;
+      }
+      originalChatLimits.value = { ...chatLimits.value };
+
+      if (settings.bannedWords && Array.isArray(settings.bannedWords)) {
+        bannedWords.value = [...settings.bannedWords];
+        originalBannedWords.value = [...settings.bannedWords];
+      }
+    }
+  } catch (error) {
+    console.error("Error loading moderation settings:", error);
+  }
+};
+
+const saveModerationSettings = async () => {
+  if (!authStore.user) return;
+
+  savingModeration.value = true;
+  try {
+    await moderationSettingsAPI.save({
+      autoModeration: moderationSettings.value.autoModerationEnabled,
+      blockLinks: moderationSettings.value.blockLinks,
+      capsFilter: moderationSettings.value.capsFilter,
+      symbolSpamFilter: moderationSettings.value.symbolSpamFilter,
+      slowMode: chatLimits.value.slowModeSeconds,
+      maxMessageLength: chatLimits.value.maxMessageLength,
+      followersOnly: chatLimits.value.followersOnlyMinutes,
+      bannedWords: bannedWords.value,
+    });
+    originalModerationSettings.value = { ...moderationSettings.value };
+    successMessage.value = t("moderation.moderationSettingsSaved");
+    showSuccessSnackbar.value = true;
+  } catch (error) {
+    console.error("Error saving moderation settings:", error);
+    errorMessage.value = t("moderation.errorSavingSettings");
+    showErrorSnackbar.value = true;
+  } finally {
+    savingModeration.value = false;
+  }
+};
+
+const saveChatLimits = async () => {
+  if (!authStore.user) return;
+
+  savingLimits.value = true;
+  try {
+    await moderationSettingsAPI.save({
+      autoModeration: moderationSettings.value.autoModerationEnabled,
+      blockLinks: moderationSettings.value.blockLinks,
+      capsFilter: moderationSettings.value.capsFilter,
+      symbolSpamFilter: moderationSettings.value.symbolSpamFilter,
+      slowMode: chatLimits.value.slowModeSeconds,
+      maxMessageLength: chatLimits.value.maxMessageLength,
+      followersOnly: chatLimits.value.followersOnlyMinutes,
+      bannedWords: bannedWords.value,
+    });
+    originalChatLimits.value = { ...chatLimits.value };
+    successMessage.value = t("moderation.chatLimitsSaved");
+    showSuccessSnackbar.value = true;
+  } catch (error) {
+    console.error("Error saving chat limits:", error);
+    errorMessage.value = t("moderation.errorSavingSettings");
+    showErrorSnackbar.value = true;
+  } finally {
+    savingLimits.value = false;
+  }
+};
+
+const saveBannedWords = async () => {
+  if (!authStore.user) return;
+
+  savingWords.value = true;
+  try {
+    await moderationSettingsAPI.save({
+      autoModeration: moderationSettings.value.autoModerationEnabled,
+      blockLinks: moderationSettings.value.blockLinks,
+      capsFilter: moderationSettings.value.capsFilter,
+      symbolSpamFilter: moderationSettings.value.symbolSpamFilter,
+      slowMode: chatLimits.value.slowModeSeconds,
+      maxMessageLength: chatLimits.value.maxMessageLength,
+      followersOnly: chatLimits.value.followersOnlyMinutes,
+      bannedWords: bannedWords.value,
+    });
+    originalBannedWords.value = [...bannedWords.value];
+    successMessage.value = t("moderation.bannedWordsSaved");
+    showSuccessSnackbar.value = true;
+  } catch (error) {
+    console.error("Error saving banned words:", error);
+    errorMessage.value = t("moderation.errorSavingSettings");
+    showErrorSnackbar.value = true;
+  } finally {
+    savingWords.value = false;
+  }
+};
+
 const addBannedWord = () => {
   const word = newBannedWord.value.trim().toLowerCase();
   if (word && !bannedWords.value.includes(word)) {
@@ -268,6 +475,21 @@ const removeBannedWord = (word: string) => {
     bannedWords.value.splice(index, 1);
   }
 };
+
+// Load settings on mount
+onMounted(() => {
+  loadModerationSettings();
+});
+
+// Watch for auth changes
+watch(
+  () => authStore.user,
+  (newUser) => {
+    if (newUser) {
+      loadModerationSettings();
+    }
+  }
+);
 </script>
 
 <style lang="scss" scoped>

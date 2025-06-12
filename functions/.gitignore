@@ -1,2 +1,17 @@
-node_modules/
-*.local
+# Dependencies
+/node_modules/
+
+# Build files
+/lib/
+
+# IDE files
+.idea
+.vscode
+
+# Log files
+*.log
+
+# Environment variables
+.env
+.env.*
+!.env.example 

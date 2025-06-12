@@ -74,6 +74,17 @@
                 {{ $t("aiSettings.creativityHint") }}
               </p>
             </div>
+
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="saveAiConfiguration"
+              :loading="savingConfiguration"
+              :disabled="!hasChanges.configuration"
+              block
+            >
+              {{ $t("aiSettings.saveAiConfiguration") }}
+            </v-btn>
           </v-card-text>
         </v-card>
 
@@ -84,7 +95,7 @@
           </v-card-title>
           <v-card-text>
             <v-text-field
-              v-model.number="aiSettings.cooldown"
+              v-model.number="responseSettings.cooldown"
               :label="$t('aiSettings.aiResponseCooldown')"
               type="number"
               variant="outlined"
@@ -95,7 +106,7 @@
             ></v-text-field>
 
             <v-switch
-              v-model="aiSettings.moderatorOnly"
+              v-model="responseSettings.moderatorOnly"
               :label="$t('aiSettings.moderatorOnlyTriggers')"
               color="warning"
               :disabled="!aiSettings.enabled"
@@ -103,7 +114,7 @@
             ></v-switch>
 
             <v-switch
-              v-model="aiSettings.filterProfanity"
+              v-model="responseSettings.filterProfanity"
               :label="$t('aiSettings.filterProfanity')"
               color="error"
               :disabled="!aiSettings.enabled"
@@ -111,13 +122,25 @@
             ></v-switch>
 
             <v-text-field
-              v-model="aiSettings.triggerWord"
+              v-model="responseSettings.triggerWord"
               :label="$t('aiSettings.aiTriggerWord')"
               variant="outlined"
               :disabled="!aiSettings.enabled"
               :hint="$t('aiSettings.triggerWordHint')"
               persistent-hint
+              class="mb-4"
             ></v-text-field>
+
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="saveResponseSettings"
+              :loading="savingResponse"
+              :disabled="!hasChanges.response"
+              block
+            >
+              {{ $t("aiSettings.saveResponseSettings") }}
+            </v-btn>
           </v-card-text>
         </v-card>
       </v-col>
@@ -132,12 +155,14 @@
             <div class="mb-4">
               <v-label class="mb-2">
                 {{
-                  $t("aiSettings.sarcasmLevel", { level: aiSettings.sarcasm })
+                  $t("aiSettings.sarcasmLevel", {
+                    level: personalitySettings.sarcasm,
+                  })
                 }}
                 😏
               </v-label>
               <v-slider
-                v-model="aiSettings.sarcasm"
+                v-model="personalitySettings.sarcasm"
                 min="0"
                 max="100"
                 step="5"
@@ -150,12 +175,14 @@
             <div class="mb-4">
               <v-label class="mb-2">
                 {{
-                  $t("aiSettings.humorLevel", { level: aiSettings.humor })
+                  $t("aiSettings.humorLevel", {
+                    level: personalitySettings.humor,
+                  })
                 }}
                 😄
               </v-label>
               <v-slider
-                v-model="aiSettings.humor"
+                v-model="personalitySettings.humor"
                 min="0"
                 max="100"
                 step="5"
@@ -169,13 +196,13 @@
               <v-label class="mb-2">
                 {{
                   $t("aiSettings.friendliness", {
-                    level: aiSettings.friendliness,
+                    level: personalitySettings.friendliness,
                   })
                 }}
                 😊
               </v-label>
               <v-slider
-                v-model="aiSettings.friendliness"
+                v-model="personalitySettings.friendliness"
                 min="0"
                 max="100"
                 step="5"
@@ -184,6 +211,17 @@
                 color="green"
               ></v-slider>
             </div>
+
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-content-save"
+              @click="savePersonalitySettings"
+              :loading="savingPersonality"
+              :disabled="!hasChanges.personality"
+              block
+            >
+              {{ $t("aiSettings.savePersonalitySettings") }}
+            </v-btn>
           </v-card-text>
         </v-card>
 
@@ -194,7 +232,7 @@
           </v-card-title>
           <v-card-text>
             <v-textarea
-              v-model="aiSettings.systemPrompt"
+              v-model="systemPrompt"
               :label="$t('aiSettings.systemPrompt')"
               variant="outlined"
               rows="8"
@@ -208,16 +246,18 @@
               <v-btn
                 color="primary"
                 prepend-icon="mdi-content-save"
-                @click="saveSettings"
-                :disabled="!aiSettings.enabled"
+                @click="saveSystemPrompt"
+                :loading="savingPrompt"
+                :disabled="!aiSettings.enabled || !hasChanges.prompt"
+                flex
               >
-                {{ $t("aiSettings.saveAiSettings") }}
+                {{ $t("aiSettings.saveSystemPrompt") }}
               </v-btn>
 
               <v-btn
                 variant="outlined"
                 prepend-icon="mdi-restore"
-                @click="resetToDefaults"
+                @click="resetPromptToDefault"
                 :disabled="!aiSettings.enabled"
               >
                 {{ $t("aiSettings.resetToDefaults") }}
@@ -267,19 +307,62 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- Success Snackbar -->
+    <v-snackbar v-model="showSuccessSnackbar" color="success" timeout="3000">
+      {{ successMessage }}
+      <template v-slot:actions>
+        <v-btn
+          color="white"
+          variant="text"
+          @click="showSuccessSnackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+
+    <!-- Error Snackbar -->
+    <v-snackbar v-model="showErrorSnackbar" color="error" timeout="5000">
+      {{ errorMessage }}
+      <template v-slot:actions>
+        <v-btn color="white" variant="text" @click="showErrorSnackbar = false">
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useAuthStore } from "../stores/auth";
+import { aiSettings as aiSettingsAPI } from "../firebase/firestore";
 
 const { t } = useI18n();
+const authStore = useAuthStore();
 
 // Data
 const testMessage = ref("");
 const testResponse = ref("");
 const testLoading = ref(false);
+const showSuccessSnackbar = ref(false);
+const showErrorSnackbar = ref(false);
+const successMessage = ref("");
+const errorMessage = ref("");
+
+// Loading states
+const savingConfiguration = ref(false);
+const savingResponse = ref(false);
+const savingPersonality = ref(false);
+const savingPrompt = ref(false);
+
+// Original settings for change detection
+const originalAiSettings = ref({});
+const originalResponseSettings = ref({});
+const originalPersonalitySettings = ref({});
+const originalSystemPrompt = ref("");
 
 const aiSettings = ref({
   enabled: false,
@@ -287,14 +370,23 @@ const aiSettings = ref({
   apiKey: "",
   maxTokens: 150,
   temperature: 0.7,
+});
+
+const responseSettings = ref({
   cooldown: 30,
   moderatorOnly: false,
   filterProfanity: true,
   triggerWord: "bot",
+});
+
+const personalitySettings = ref({
   sarcasm: 25,
   humor: 50,
   friendliness: 75,
-  systemPrompt: `You are a helpful and entertaining Twitch chat bot. Your role is to:
+});
+
+const systemPrompt =
+  ref(`You are a helpful and entertaining Twitch chat bot. Your role is to:
 
 1. Engage with viewers in a friendly and welcoming manner
 2. Answer questions about the stream and streamer
@@ -309,8 +401,7 @@ Guidelines:
 - Avoid controversial topics
 - Use emotes and Twitch culture appropriately
 
-Remember: You represent the streamer and their community!`,
-});
+Remember: You represent the streamer and their community!`);
 
 const aiModels = computed(() => [
   { title: t("aiSettings.gpt35Turbo"), value: "gpt-3.5-turbo" },
@@ -318,27 +409,195 @@ const aiModels = computed(() => [
   { title: t("aiSettings.gpt4Turbo"), value: "gpt-4-turbo" },
 ]);
 
+// Computed
+const hasChanges = computed(() => ({
+  configuration:
+    JSON.stringify(aiSettings.value) !==
+    JSON.stringify(originalAiSettings.value),
+  response:
+    JSON.stringify(responseSettings.value) !==
+    JSON.stringify(originalResponseSettings.value),
+  personality:
+    JSON.stringify(personalitySettings.value) !==
+    JSON.stringify(originalPersonalitySettings.value),
+  prompt: systemPrompt.value !== originalSystemPrompt.value,
+}));
+
 // Methods
-const saveSettings = () => {
-  console.log("AI settings saved:", aiSettings.value);
-  // Here you would typically save to localStorage or send to backend
+const loadAiSettings = async () => {
+  if (!authStore.user) return;
+
+  try {
+    const settings = await aiSettingsAPI.get();
+    if (settings) {
+      aiSettings.value = { ...aiSettings.value, ...settings };
+      originalAiSettings.value = { ...aiSettings.value };
+
+      if (settings.cooldown !== undefined) {
+        responseSettings.value.cooldown = settings.cooldown;
+      }
+      if (settings.moderatorOnly !== undefined) {
+        responseSettings.value.moderatorOnly = settings.moderatorOnly;
+      }
+      if (settings.filterProfanity !== undefined) {
+        responseSettings.value.filterProfanity = settings.filterProfanity;
+      }
+      if (settings.triggerWord !== undefined) {
+        responseSettings.value.triggerWord = settings.triggerWord;
+      }
+      originalResponseSettings.value = { ...responseSettings.value };
+
+      if (settings.sarcasm !== undefined) {
+        personalitySettings.value.sarcasm = settings.sarcasm;
+      }
+      if (settings.humor !== undefined) {
+        personalitySettings.value.humor = settings.humor;
+      }
+      if (settings.friendliness !== undefined) {
+        personalitySettings.value.friendliness = settings.friendliness;
+      }
+      originalPersonalitySettings.value = { ...personalitySettings.value };
+
+      if (settings.systemPrompt) {
+        systemPrompt.value = settings.systemPrompt;
+        originalSystemPrompt.value = settings.systemPrompt;
+      }
+    }
+  } catch (error) {
+    console.error("Error loading AI settings:", error);
+  }
 };
 
-const resetToDefaults = () => {
-  aiSettings.value = {
-    enabled: false,
-    model: "gpt-3.5-turbo",
-    apiKey: "",
-    maxTokens: 150,
-    temperature: 0.7,
-    cooldown: 30,
-    moderatorOnly: false,
-    filterProfanity: true,
-    triggerWord: "bot",
-    sarcasm: 25,
-    humor: 50,
-    friendliness: 75,
-    systemPrompt: `You are a helpful and entertaining Twitch chat bot. Your role is to:
+const saveAiConfiguration = async () => {
+  if (!authStore.user) return;
+
+  savingConfiguration.value = true;
+  try {
+    await aiSettingsAPI.save({
+      enabled: aiSettings.value.enabled,
+      model: aiSettings.value.model,
+      apiKey: aiSettings.value.apiKey,
+      maxTokens: aiSettings.value.maxTokens,
+      temperature: aiSettings.value.temperature,
+      cooldown: responseSettings.value.cooldown,
+      moderatorOnly: responseSettings.value.moderatorOnly,
+      filterProfanity: responseSettings.value.filterProfanity,
+      triggerWord: responseSettings.value.triggerWord,
+      sarcasm: personalitySettings.value.sarcasm,
+      humor: personalitySettings.value.humor,
+      friendliness: personalitySettings.value.friendliness,
+      systemPrompt: systemPrompt.value,
+    });
+    originalAiSettings.value = { ...aiSettings.value };
+    successMessage.value = t("aiSettings.aiConfigurationSaved");
+    showSuccessSnackbar.value = true;
+  } catch (error) {
+    console.error("Error saving AI configuration:", error);
+    errorMessage.value = t("aiSettings.errorSavingSettings");
+    showErrorSnackbar.value = true;
+  } finally {
+    savingConfiguration.value = false;
+  }
+};
+
+const saveResponseSettings = async () => {
+  if (!authStore.user) return;
+
+  savingResponse.value = true;
+  try {
+    await aiSettingsAPI.save({
+      enabled: aiSettings.value.enabled,
+      model: aiSettings.value.model,
+      apiKey: aiSettings.value.apiKey,
+      maxTokens: aiSettings.value.maxTokens,
+      temperature: aiSettings.value.temperature,
+      cooldown: responseSettings.value.cooldown,
+      moderatorOnly: responseSettings.value.moderatorOnly,
+      filterProfanity: responseSettings.value.filterProfanity,
+      triggerWord: responseSettings.value.triggerWord,
+      sarcasm: personalitySettings.value.sarcasm,
+      humor: personalitySettings.value.humor,
+      friendliness: personalitySettings.value.friendliness,
+      systemPrompt: systemPrompt.value,
+    });
+    originalResponseSettings.value = { ...responseSettings.value };
+    successMessage.value = t("aiSettings.responseSettingsSaved");
+    showSuccessSnackbar.value = true;
+  } catch (error) {
+    console.error("Error saving response settings:", error);
+    errorMessage.value = t("aiSettings.errorSavingSettings");
+    showErrorSnackbar.value = true;
+  } finally {
+    savingResponse.value = false;
+  }
+};
+
+const savePersonalitySettings = async () => {
+  if (!authStore.user) return;
+
+  savingPersonality.value = true;
+  try {
+    await aiSettingsAPI.save({
+      enabled: aiSettings.value.enabled,
+      model: aiSettings.value.model,
+      apiKey: aiSettings.value.apiKey,
+      maxTokens: aiSettings.value.maxTokens,
+      temperature: aiSettings.value.temperature,
+      cooldown: responseSettings.value.cooldown,
+      moderatorOnly: responseSettings.value.moderatorOnly,
+      filterProfanity: responseSettings.value.filterProfanity,
+      triggerWord: responseSettings.value.triggerWord,
+      sarcasm: personalitySettings.value.sarcasm,
+      humor: personalitySettings.value.humor,
+      friendliness: personalitySettings.value.friendliness,
+      systemPrompt: systemPrompt.value,
+    });
+    originalPersonalitySettings.value = { ...personalitySettings.value };
+    successMessage.value = t("aiSettings.personalitySettingsSaved");
+    showSuccessSnackbar.value = true;
+  } catch (error) {
+    console.error("Error saving personality settings:", error);
+    errorMessage.value = t("aiSettings.errorSavingSettings");
+    showErrorSnackbar.value = true;
+  } finally {
+    savingPersonality.value = false;
+  }
+};
+
+const saveSystemPrompt = async () => {
+  if (!authStore.user) return;
+
+  savingPrompt.value = true;
+  try {
+    await aiSettingsAPI.save({
+      enabled: aiSettings.value.enabled,
+      model: aiSettings.value.model,
+      apiKey: aiSettings.value.apiKey,
+      maxTokens: aiSettings.value.maxTokens,
+      temperature: aiSettings.value.temperature,
+      cooldown: responseSettings.value.cooldown,
+      moderatorOnly: responseSettings.value.moderatorOnly,
+      filterProfanity: responseSettings.value.filterProfanity,
+      triggerWord: responseSettings.value.triggerWord,
+      sarcasm: personalitySettings.value.sarcasm,
+      humor: personalitySettings.value.humor,
+      friendliness: personalitySettings.value.friendliness,
+      systemPrompt: systemPrompt.value,
+    });
+    originalSystemPrompt.value = systemPrompt.value;
+    successMessage.value = t("aiSettings.systemPromptSaved");
+    showSuccessSnackbar.value = true;
+  } catch (error) {
+    console.error("Error saving system prompt:", error);
+    errorMessage.value = t("aiSettings.errorSavingSettings");
+    showErrorSnackbar.value = true;
+  } finally {
+    savingPrompt.value = false;
+  }
+};
+
+const resetPromptToDefault = () => {
+  systemPrompt.value = `You are a helpful and entertaining Twitch chat bot. Your role is to:
 
 1. Engage with viewers in a friendly and welcoming manner
 2. Answer questions about the stream and streamer
@@ -353,8 +612,7 @@ Guidelines:
 - Avoid controversial topics
 - Use emotes and Twitch culture appropriately
 
-Remember: You represent the streamer and their community!`,
-  };
+Remember: You represent the streamer and their community!`;
 };
 
 const testAiResponse = async () => {
@@ -375,19 +633,34 @@ const testAiResponse = async () => {
   // Add personality based on settings
   let response = responses[Math.floor(Math.random() * responses.length)];
 
-  if (aiSettings.value.sarcasm > 70) {
+  if (personalitySettings.value.sarcasm > 70) {
     response = "Oh wow, another test message. How original! 😏 " + response;
-  } else if (aiSettings.value.humor > 70) {
+  } else if (personalitySettings.value.humor > 70) {
     response = "Beep boop! 🤖 " + response + " *robot noises*";
   }
 
-  if (aiSettings.value.friendliness > 80) {
+  if (personalitySettings.value.friendliness > 80) {
     response = response + " Hope you're having an awesome day! 💜";
   }
 
   testResponse.value = response;
   testLoading.value = false;
 };
+
+// Load settings on mount
+onMounted(() => {
+  loadAiSettings();
+});
+
+// Watch for auth changes
+watch(
+  () => authStore.user,
+  (newUser) => {
+    if (newUser) {
+      loadAiSettings();
+    }
+  }
+);
 </script>
 
 <style lang="scss" scoped>
