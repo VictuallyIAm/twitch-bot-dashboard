@@ -44,19 +44,7 @@
               v-model="botSettings.autoConnect"
               :label="$t('settings.autoConnectOnStartup')"
               color="primary"
-              class="mb-4"
             ></v-switch>
-
-            <v-btn
-              color="primary"
-              prepend-icon="mdi-content-save"
-              @click="saveBotSettings"
-              :loading="savingBot"
-              :disabled="!hasChanges.bot"
-              block
-            >
-              {{ $t("settings.saveBotSettings") }}
-            </v-btn>
           </v-card-text>
         </v-card>
 
@@ -79,19 +67,7 @@
               :label="$t('settings.language')"
               :items="languageOptions"
               variant="outlined"
-              class="mb-4"
             ></v-select>
-
-            <v-btn
-              color="primary"
-              prepend-icon="mdi-content-save"
-              @click="saveAppearanceSettings"
-              :loading="savingAppearance"
-              :disabled="!hasChanges.appearance"
-              block
-            >
-              {{ $t("settings.saveAppearanceSettings") }}
-            </v-btn>
           </v-card-text>
         </v-card>
       </v-col>
@@ -128,19 +104,7 @@
               v-model="notificationSettings.moderationActions"
               :label="$t('settings.moderationActions')"
               color="error"
-              class="mb-4"
             ></v-switch>
-
-            <v-btn
-              color="primary"
-              prepend-icon="mdi-content-save"
-              @click="saveNotificationSettings"
-              :loading="savingNotifications"
-              :disabled="!hasChanges.notifications"
-              block
-            >
-              {{ $t("settings.saveNotificationSettings") }}
-            </v-btn>
           </v-card-text>
         </v-card>
 
@@ -205,58 +169,17 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <!-- Success Snackbar -->
-    <v-snackbar v-model="showSuccessSnackbar" color="success" timeout="3000">
-      {{ successMessage }}
-      <template v-slot:actions>
-        <v-btn
-          color="white"
-          variant="text"
-          @click="showSuccessSnackbar = false"
-        >
-          Close
-        </v-btn>
-      </template>
-    </v-snackbar>
-
-    <!-- Error Snackbar -->
-    <v-snackbar v-model="showErrorSnackbar" color="error" timeout="5000">
-      {{ errorMessage }}
-      <template v-slot:actions>
-        <v-btn color="white" variant="text" @click="showErrorSnackbar = false">
-          Close
-        </v-btn>
-      </template>
-    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-import { useAuthStore } from "../stores/auth";
-import { botSettings as botSettingsAPI } from "../firebase/firestore";
 
 const { t } = useI18n();
-const authStore = useAuthStore();
 
 // Data
 const showResetDialog = ref(false);
-const showSuccessSnackbar = ref(false);
-const showErrorSnackbar = ref(false);
-const successMessage = ref("");
-const errorMessage = ref("");
-
-// Loading states
-const savingBot = ref(false);
-const savingAppearance = ref(false);
-const savingNotifications = ref(false);
-
-// Original settings for change detection
-const originalBotSettings = ref({});
-const originalAppearanceSettings = ref({});
-const originalNotificationSettings = ref({});
 
 const botSettings = ref({
   username: "TwitchBot",
@@ -289,91 +212,7 @@ const languageOptions = computed(() => [
   { title: t("settings.russian"), value: "ru" },
 ]);
 
-const hasChanges = computed(() => ({
-  bot:
-    JSON.stringify(botSettings.value) !==
-    JSON.stringify(originalBotSettings.value),
-  appearance:
-    JSON.stringify(appearanceSettings.value) !==
-    JSON.stringify(originalAppearanceSettings.value),
-  notifications:
-    JSON.stringify(notificationSettings.value) !==
-    JSON.stringify(originalNotificationSettings.value),
-}));
-
 // Methods
-const loadSettings = async () => {
-  if (!authStore.user) return;
-
-  try {
-    const settings = await botSettingsAPI.get();
-    if (settings) {
-      botSettings.value = { ...botSettings.value, ...settings };
-      originalBotSettings.value = { ...botSettings.value };
-    }
-  } catch (error) {
-    console.error("Error loading settings:", error);
-  }
-};
-
-const saveBotSettings = async () => {
-  if (!authStore.user) return;
-
-  savingBot.value = true;
-  try {
-    await botSettingsAPI.save(botSettings.value);
-    originalBotSettings.value = { ...botSettings.value };
-    successMessage.value = t("settings.botSettingsSaved");
-    showSuccessSnackbar.value = true;
-  } catch (error) {
-    console.error("Error saving bot settings:", error);
-    errorMessage.value = t("settings.errorSavingSettings");
-    showErrorSnackbar.value = true;
-  } finally {
-    savingBot.value = false;
-  }
-};
-
-const saveAppearanceSettings = async () => {
-  savingAppearance.value = true;
-  try {
-    // Save to localStorage for appearance settings
-    localStorage.setItem(
-      "appearance",
-      JSON.stringify(appearanceSettings.value)
-    );
-    originalAppearanceSettings.value = { ...appearanceSettings.value };
-    successMessage.value = t("settings.appearanceSettingsSaved");
-    showSuccessSnackbar.value = true;
-  } catch (error) {
-    console.error("Error saving appearance settings:", error);
-    errorMessage.value = t("settings.errorSavingSettings");
-    showErrorSnackbar.value = true;
-  } finally {
-    savingAppearance.value = false;
-  }
-};
-
-const saveNotificationSettings = async () => {
-  savingNotifications.value = true;
-  try {
-    // Save to localStorage for notification settings
-    localStorage.setItem(
-      "notifications",
-      JSON.stringify(notificationSettings.value)
-    );
-    originalNotificationSettings.value = { ...notificationSettings.value };
-    successMessage.value = t("settings.notificationSettingsSaved");
-    showSuccessSnackbar.value = true;
-  } catch (error) {
-    console.error("Error saving notification settings:", error);
-    errorMessage.value = t("settings.errorSavingSettings");
-    showErrorSnackbar.value = true;
-  } finally {
-    savingNotifications.value = false;
-  }
-};
-
 const exportSettings = () => {
   const settings = {
     bot: botSettings.value,
@@ -389,8 +228,7 @@ const exportSettings = () => {
   link.download = "twitch-bot-settings.json";
   link.click();
 
-  successMessage.value = t("settings.settingsExported");
-  showSuccessSnackbar.value = true;
+  console.log("Settings exported");
 };
 
 const importSettings = () => {
@@ -419,12 +257,9 @@ const importSettings = () => {
               ...settings.notifications,
             };
 
-          successMessage.value = t("settings.settingsImported");
-          showSuccessSnackbar.value = true;
+          console.log("Settings imported successfully");
         } catch (error) {
           console.error("Error importing settings:", error);
-          errorMessage.value = t("settings.errorImportingSettings");
-          showErrorSnackbar.value = true;
         }
       };
       reader.readAsText(file);
@@ -455,44 +290,8 @@ const resetToDefaults = () => {
   };
 
   showResetDialog.value = false;
-  successMessage.value = t("settings.settingsReset");
-  showSuccessSnackbar.value = true;
+  console.log("Settings reset to defaults");
 };
-
-// Load settings on mount
-onMounted(() => {
-  loadSettings();
-
-  // Load appearance settings from localStorage
-  const savedAppearance = localStorage.getItem("appearance");
-  if (savedAppearance) {
-    appearanceSettings.value = {
-      ...appearanceSettings.value,
-      ...JSON.parse(savedAppearance),
-    };
-    originalAppearanceSettings.value = { ...appearanceSettings.value };
-  }
-
-  // Load notification settings from localStorage
-  const savedNotifications = localStorage.getItem("notifications");
-  if (savedNotifications) {
-    notificationSettings.value = {
-      ...notificationSettings.value,
-      ...JSON.parse(savedNotifications),
-    };
-    originalNotificationSettings.value = { ...notificationSettings.value };
-  }
-});
-
-// Watch for auth changes
-watch(
-  () => authStore.user,
-  (newUser) => {
-    if (newUser) {
-      loadSettings();
-    }
-  }
-);
 </script>
 
 <style lang="scss" scoped>

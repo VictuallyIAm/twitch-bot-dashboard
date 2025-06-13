@@ -13,48 +13,20 @@
       </div>
 
       <div class="text-center">
-        <!-- Error Display -->
-        <v-alert
-          v-if="error"
-          type="error"
-          variant="tonal"
-          class="mb-6"
-          closable
-          @click:close="error = null"
-        >
-          {{ error }}
-        </v-alert>
-
-        <!-- Success Message for Authenticated Users -->
-        <v-alert
-          v-if="isTwitchAuthenticated"
-          type="success"
-          variant="tonal"
-          class="mb-6"
-          icon="mdi-check-circle"
-        >
-          {{ $t("auth.loginSuccess") }}
-        </v-alert>
-
         <v-btn
           color="#9146FF"
           size="x-large"
           block
           class="mb-6 twitch-btn"
           :loading="loading"
-          :disabled="isTwitchAuthenticated"
           @click="loginWithTwitch"
           prepend-icon="mdi-twitch"
           elevation="4"
           height="60"
         >
-          <span class="text-h6 font-weight-bold">
-            {{
-              isTwitchAuthenticated
-                ? $t("auth.alreadyLoggedIn")
-                : $t("auth.loginWithTwitch")
-            }}
-          </span>
+          <span class="text-h6 font-weight-bold">{{
+            $t("auth.loginWithTwitch")
+          }}</span>
         </v-btn>
 
         <div class="security-info">
@@ -71,37 +43,33 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from "vue";
-import { useRoute } from "vue-router";
-import { useTwitchAuth } from "@/composables/useTwitchAuth";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
 
-const route = useRoute();
+const router = useRouter();
+const loading = ref(false);
 
-// Use the Twitch OAuth composable
-const {
-  loginWithTwitch,
-  handleCallbackFromUrl,
-  handleOAuthError,
-  isLoading,
-  error,
-  isTwitchAuthenticated,
-} = useTwitchAuth();
+const loginWithTwitch = () => {
+  loading.value = true;
 
-// Handle OAuth callback or errors on component mount
-onMounted(() => {
-  // Check for OAuth callback parameters
-  if (route.query.code) {
-    handleCallbackFromUrl();
-  }
+  // Generate state parameter for security
+  const state = Math.random().toString(36).substring(2, 15);
+  localStorage.setItem("twitch_auth_state", state);
 
-  // Check for OAuth errors
-  if (route.query.error) {
-    handleOAuthError(route.query.error as string);
-  }
-});
+  // Twitch OAuth URL
+  const clientId = "your_twitch_client_id"; // Replace with your actual client ID
+  const redirectUri = encodeURIComponent(
+    `${window.location.origin}/auth/twitch/callback`
+  );
+  const scope = encodeURIComponent(
+    "user:read:email chat:read chat:edit channel:moderate"
+  );
 
-// Use loading state from composable
-const loading = computed(() => isLoading.value);
+  const twitchAuthUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
+
+  // Redirect to Twitch OAuth
+  window.location.href = twitchAuthUrl;
+};
 </script>
 
 <style lang="scss" scoped>

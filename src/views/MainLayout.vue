@@ -8,7 +8,7 @@
       class="border-e"
     >
       <v-list-item
-        :prepend-avatar="userProfile.avatar"
+        prepend-avatar="https://randomuser.me/api/portraits/men/85.jpg"
         :title="userProfile.username"
         :subtitle="userProfile.email"
         nav
@@ -88,20 +88,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useTheme } from "vuetify";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import AuthForm from "../components/AuthForm.vue";
 import Dashboard from "../components/Dashboard.vue";
-import { useAuthStore } from "../stores/auth";
-import { signOutUser } from "../firebase/auth";
 
 // Router
 const router = useRouter();
-
-// Auth store
-const authStore = useAuthStore();
 
 // Internationalization
 const { locale } = useI18n();
@@ -117,14 +112,12 @@ const themeIcon = computed(() =>
 // Navigation
 const selectedMenuItem = ref("overview");
 
-// Authentication state (using auth store)
-const isLoggedIn = computed(() => authStore.isAuthenticated);
-const userProfile = computed(() => ({
-  username: authStore.userDisplayName,
-  email: authStore.userEmail,
-  avatar:
-    authStore.userPhotoURL || "https://randomuser.me/api/portraits/men/85.jpg",
-}));
+// Authentication state
+const isLoggedIn = ref(false);
+const userProfile = ref({
+  username: "StreamerBot",
+  email: "user@example.com",
+});
 
 // Language options
 const languageOptions = [
@@ -157,19 +150,23 @@ const changeLanguage = (newLanguage: string) => {
   localStorage.setItem("language", newLanguage);
 };
 
-const logout = async () => {
-  try {
-    await signOutUser();
-    await authStore.logout();
-    selectedMenuItem.value = "overview";
-  } catch (error) {
-    console.error("Logout error:", error);
-  }
+const logout = () => {
+  isLoggedIn.value = false;
+  localStorage.removeItem("isLoggedIn");
+  localStorage.removeItem("userProfile");
+  localStorage.removeItem("twitch_access_token");
+  selectedMenuItem.value = "overview";
 };
 
-// Initialize auth store on mount
+// Check for existing session on app load
 onMounted(() => {
-  authStore.initializeAuth();
+  const storedAuth = localStorage.getItem("isLoggedIn");
+  const storedProfile = localStorage.getItem("userProfile");
+
+  if (storedAuth === "true" && storedProfile) {
+    isLoggedIn.value = true;
+    userProfile.value = JSON.parse(storedProfile);
+  }
 });
 </script>
 

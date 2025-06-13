@@ -24,22 +24,20 @@
         "firebase-debug.*.log",
         "*.local"
       ],
-      "predeploy": []
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
     }
   ],
   "apphosting": {
-    "source": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "build": {
-      "commands": ["npm run build"],
-      "publish": "dist"
-    },
-    "runtime": {
-      "memory": "1GiB",
-      "concurrency": 100
-    },
-    "env": {
-      "NODE_ENV": "production"
-    }
+    "backendId": "bot-dashboard-service",
+    "rootDir": "/",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "functions"
+    ]
   }
 }
