@@ -118,8 +118,7 @@ const themeIcon = computed(() =>
 const selectedMenuItem = ref("overview");
 
 // Authentication state (using auth store)
-// const isLoggedIn = computed(() => authStore.isAuthenticated);
-const isLoggedIn = ref(true);
+const isLoggedIn = computed(() => authStore.isAuthenticated);
 const userProfile = computed(() => ({
   username: authStore.userDisplayName,
   email: authStore.userEmail,
