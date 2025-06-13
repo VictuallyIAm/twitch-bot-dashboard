@@ -9,8 +9,8 @@
     >
       <v-list-item
         prepend-avatar="https://randomuser.me/api/portraits/men/85.jpg"
-        :title="userProfile.username"
-        :subtitle="userProfile.email"
+        :title="user?.displayName ?? ''"
+        :subtitle="user?.email ?? ''"
         nav
         class="pa-4"
       >
@@ -63,7 +63,7 @@
       <v-btn
         v-if="isLoggedIn"
         icon
-        @click="logout"
+        @click="signOut(auth)"
         variant="text"
         :title="$t('nav.logout')"
       >
@@ -91,12 +91,14 @@
 import { ref, computed, onMounted } from "vue";
 import { useTheme } from "vuetify";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import AuthForm from "../components/AuthForm.vue";
 import Dashboard from "../components/Dashboard.vue";
 
-// Router
-const router = useRouter();
+import { signOut } from "firebase/auth";
+import { useCurrentUser, useFirebaseAuth } from "vuefire";
+
+const user = useCurrentUser();
+const auth = useFirebaseAuth()!;
 
 // Internationalization
 const { locale } = useI18n();
@@ -113,11 +115,7 @@ const themeIcon = computed(() =>
 const selectedMenuItem = ref("overview");
 
 // Authentication state
-const isLoggedIn = ref(false);
-const userProfile = ref({
-  username: "StreamerBot",
-  email: "user@example.com",
-});
+const isLoggedIn = computed(() => !!user.value);
 
 // Language options
 const languageOptions = [
@@ -144,30 +142,24 @@ const menuItems = [
 const toggleTheme = () => {
   theme.global.name.value = theme.global.current.value.dark ? "light" : "dark";
 };
+const logout = () => {
+  signOut(auth);
+};
 
 const changeLanguage = (newLanguage: string) => {
   locale.value = newLanguage;
   localStorage.setItem("language", newLanguage);
 };
 
-const logout = () => {
-  isLoggedIn.value = false;
-  localStorage.removeItem("isLoggedIn");
-  localStorage.removeItem("userProfile");
-  localStorage.removeItem("twitch_access_token");
-  selectedMenuItem.value = "overview";
-};
+// // Check for existing session on app load
+// onMounted(() => {
+//   const storedAuth = localStorage.getItem("isLoggedIn");
+//   const storedProfile = localStorage.getItem("userProfile");
 
-// Check for existing session on app load
-onMounted(() => {
-  const storedAuth = localStorage.getItem("isLoggedIn");
-  const storedProfile = localStorage.getItem("userProfile");
-
-  if (storedAuth === "true" && storedProfile) {
-    isLoggedIn.value = true;
-    userProfile.value = JSON.parse(storedProfile);
-  }
-});
+//   if (storedAuth === "true" && storedProfile) {
+//     userProfile.value = JSON.parse(storedProfile);
+//   }
+// });
 </script>
 
 <style lang="scss" scoped>

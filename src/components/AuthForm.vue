@@ -19,7 +19,7 @@
           block
           class="mb-6 twitch-btn"
           :loading="loading"
-          @click="loginWithTwitch"
+          @click="signinPopup"
           prepend-icon="mdi-twitch"
           elevation="4"
           height="60"
@@ -42,34 +42,36 @@
   </v-card>
 </template>
 
+<script lang="ts">
+import { OAuthProvider } from "firebase/auth";
+
+const twitchProvider = new OAuthProvider("oidc.twitch");
+twitchProvider.addScope("user:read:email");
+twitchProvider.addScope("user:read:follows");
+twitchProvider.addScope("user:read:subscriptions");
+twitchProvider.addScope("user:read:blocked_users");
+twitchProvider.addScope("user:read:chat");
+
+</script>
+
 <script setup lang="ts">
 import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { signInWithPopup, signOut } from "firebase/auth";
+import { useCurrentUser, useFirebaseAuth } from "vuefire";
 
-const router = useRouter();
+const auth = useFirebaseAuth()!;
+const error = ref(null);
 const loading = ref(false);
 
-const loginWithTwitch = () => {
+function signinPopup() {
+  error.value = null;
   loading.value = true;
-
-  // Generate state parameter for security
-  const state = Math.random().toString(36).substring(2, 15);
-  localStorage.setItem("twitch_auth_state", state);
-
-  // Twitch OAuth URL
-  const clientId = "your_twitch_client_id"; // Replace with your actual client ID
-  const redirectUri = encodeURIComponent(
-    `${window.location.origin}/auth/twitch/callback`
-  );
-  const scope = encodeURIComponent(
-    "user:read:email chat:read chat:edit channel:moderate"
-  );
-
-  const twitchAuthUrl = `https://id.twitch.tv/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}`;
-
-  // Redirect to Twitch OAuth
-  window.location.href = twitchAuthUrl;
-};
+  signInWithPopup(auth, twitchProvider).catch((reason) => {
+    console.error("Failed sign", reason);
+    error.value = reason;
+  });
+  loading.value = false;
+}
 </script>
 
 <style lang="scss" scoped>
