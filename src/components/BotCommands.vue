@@ -1,5 +1,10 @@
 <template>
-  <div>
+  <div v-if="!userBotSettings">
+    <v-skeleton-loader type="card" />
+    <v-skeleton-loader type="card" />
+    <v-skeleton-loader type="card" />
+  </div>
+  <div v-else>
     <v-row class="mb-6">
       <v-col cols="12">
         <h1 class="text-h3 font-weight-bold mb-2">
@@ -40,6 +45,7 @@
         :search="search"
         item-value="id"
         class="elevation-0"
+        no-data-text="No commands found"
       >
         <template v-slot:item.command="{ item }">
           <v-chip color="primary" variant="outlined" size="small">
@@ -63,7 +69,7 @@
 
         <template v-slot:item.usage="{ item }">
           <v-chip variant="outlined" size="small">
-            {{ item.usage }}
+            {{ item.usageCount }}
           </v-chip>
         </template>
 
@@ -163,62 +169,25 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
-
+import { useUserStore, type command } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
 const { t } = useI18n();
+const { userBotSettings } = storeToRefs(useUserStore());
 
 // Data
 const search = ref("");
 const dialog = ref(false);
 const editingCommand = ref(false);
 const formRef = ref();
-
-const commandForm = ref({
-  id: null as number | null,
+const commandForm = ref<command>({
+  id: 0,
   command: "",
   response: "",
   cooldown: 5,
   permission: "everyone",
   enabled: true,
+  usageCount: 0,
 });
-
-const commands = ref([
-  {
-    id: 1,
-    command: "hello",
-    response: "Hello there! Welcome to the stream! 👋",
-    cooldown: 5,
-    permission: "everyone",
-    usage: 42,
-    enabled: true,
-  },
-  {
-    id: 2,
-    command: "discord",
-    response: "Join our Discord server: https://discord.gg/example",
-    cooldown: 10,
-    permission: "subscribers",
-    usage: 28,
-    enabled: true,
-  },
-  {
-    id: 3,
-    command: "uptime",
-    response: "Stream has been live for: {uptime}",
-    cooldown: 15,
-    permission: "everyone",
-    usage: 156,
-    enabled: true,
-  },
-  {
-    id: 4,
-    command: "social",
-    response: "Follow me on Twitter: @streamer | Instagram: @streamer",
-    cooldown: 30,
-    permission: "moderators",
-    usage: 12,
-    enabled: false,
-  },
-]);
 
 // Computed
 const headers = computed(() => [
@@ -238,8 +207,8 @@ const permissionOptions = computed(() => [
 ]);
 
 const filteredCommands = computed(() => {
-  if (!search.value) return commands.value;
-  return commands.value.filter(
+  if (!search.value) return userBotSettings.value?.botCommands.commands;
+  return userBotSettings.value?.botCommands.commands.filter(
     (cmd) =>
       cmd.command.toLowerCase().includes(search.value.toLowerCase()) ||
       cmd.response.toLowerCase().includes(search.value.toLowerCase())
@@ -271,12 +240,13 @@ const getPermissionColor = (permission: string) => {
 const openAddDialog = () => {
   editingCommand.value = false;
   commandForm.value = {
-    id: null,
+    id: Date.now(),
     command: "",
     response: "",
     cooldown: 5,
     permission: "everyone",
     enabled: true,
+    usageCount: 0,
   };
   dialog.value = true;
 };
@@ -297,11 +267,13 @@ const saveCommand = async () => {
   if (!valid) return;
 
   if (editingCommand.value) {
-    const index = commands.value.findIndex(
+    const index = userBotSettings.value?.botCommands.commands.findIndex(
       (cmd) => cmd.id === commandForm.value.id
     );
-    if (index !== -1) {
-      commands.value[index] = { ...commandForm.value } as any;
+    if (userBotSettings.value && index && index !== -1) {
+      userBotSettings.value.botCommands.commands[index] = {
+        ...commandForm.value,
+      } as any;
     }
   } else {
     const newCommand = {
@@ -309,16 +281,16 @@ const saveCommand = async () => {
       id: Date.now(),
       usage: 0,
     };
-    commands.value.push(newCommand as any);
+    userBotSettings.value?.botCommands.commands.push(newCommand as any);
   }
 
   closeDialog();
 };
 
 const deleteCommand = (id: number) => {
-  const index = commands.value.findIndex((cmd) => cmd.id === id);
-  if (index !== -1) {
-    commands.value.splice(index, 1);
+  if (userBotSettings.value) {
+    userBotSettings.value.botCommands.commands =
+      userBotSettings.value.botCommands.commands.filter((cmd) => cmd.id !== id);
   }
 };
 </script>

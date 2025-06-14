@@ -69,24 +69,9 @@
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useI18n } from "vue-i18n";
+import { useUserStore } from "@/stores/userStore";
 
-interface TwitchTokenResponse {
-  access_token: string;
-  refresh_token: string;
-  expires_in: number;
-  scope: string[];
-  token_type: string;
-}
-
-interface TwitchUserResponse {
-  data: Array<{
-    id: string;
-    login: string;
-    display_name: string;
-    email: string;
-    profile_image_url: string;
-  }>;
-}
+const { getUser, setAuthTokens } = useUserStore();
 
 const router = useRouter();
 const route = useRoute();
@@ -97,121 +82,22 @@ const success = ref(false);
 const error = ref(false);
 const errorMessage = ref("");
 
-const exchangeCodeForToken = async (
-  code: string,
-  state: string
-): Promise<TwitchTokenResponse> => {
-  // Verify state parameter
-  const storedState = localStorage.getItem("twitch_auth_state");
-  if (state !== storedState) {
-    throw new Error("Invalid state parameter");
-  }
-
-  const clientId = "your_twitch_client_id"; // Replace with your actual client ID
-  const clientSecret = "your_twitch_client_secret"; // Replace with your actual client secret
-  const redirectUri = `${window.location.origin}/auth/twitch/callback`;
-
-  const response = await fetch("https://id.twitch.tv/oauth2/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code: code,
-      grant_type: "authorization_code",
-      redirect_uri: redirectUri,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Token exchange failed: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const getUserInfo = async (
-  accessToken: string
-): Promise<TwitchUserResponse> => {
-  const clientId = "your_twitch_client_id"; // Replace with your actual client ID
-
-  const response = await fetch("https://api.twitch.tv/helix/users", {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Client-Id": clientId,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`User info fetch failed: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
 const handleTwitchCallback = async () => {
-  try {
-    const code = route.query.code as string;
-    const state = route.query.state as string;
-    const errorParam = route.query.error as string;
+  const params = new URLSearchParams(window.location.hash.substring(1));
 
-    // Check for error in callback
-    if (errorParam) {
-      throw new Error(`Twitch OAuth error: ${errorParam}`);
-    }
+  const returnedState = params.get("state");
+  const expectedState = localStorage.getItem("twitch_oauth_state");
 
-    if (!code || !state) {
-      throw new Error("Missing authorization code or state parameter");
-    }
-
-    // Exchange code for access token
-    const tokenResponse = await exchangeCodeForToken(code, state);
-
-    // Get user information
-    const userResponse = await getUserInfo(tokenResponse.access_token);
-    const userData = userResponse.data[0];
-
-    // Store authentication data
-    localStorage.setItem("twitch_access_token", tokenResponse.access_token);
-    localStorage.setItem("twitch_refresh_token", tokenResponse.refresh_token);
-    localStorage.setItem(
-      "twitch_token_expires",
-      (Date.now() + tokenResponse.expires_in * 1000).toString()
-    );
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem(
-      "userProfile",
-      JSON.stringify({
-        id: userData.id,
-        username: userData.display_name || userData.login,
-        email: userData.email,
-        avatar: userData.profile_image_url,
-        loginMethod: "twitch",
-      })
-    );
-
-    // Clean up state
-    localStorage.removeItem("twitch_auth_state");
-
-    loading.value = false;
-    success.value = true;
-
-    // Auto-redirect after 3 seconds
-    setTimeout(() => {
-      redirectToDashboard();
-    }, 3000);
-  } catch (err) {
-    console.error("Twitch authentication error:", err);
-    loading.value = false;
+  if (returnedState !== expectedState) {
     error.value = true;
-    errorMessage.value =
-      err instanceof Error ? err.message : t("auth.unknownError");
-
-    // Clean up any stored state
-    localStorage.removeItem("twitch_auth_state");
+    errorMessage.value = "OAuth state mismatch. Aborting.";
+    return;
   }
+
+  setAuthTokens(params.get("access_token") || "");
+  await getUser();
+
+  redirectToDashboard();
 };
 
 const redirectToDashboard = () => {
@@ -222,7 +108,7 @@ const redirectToLogin = () => {
   router.push("/");
 };
 
-onMounted(() => {
+onMounted(async () => {
   handleTwitchCallback();
 });
 </script>

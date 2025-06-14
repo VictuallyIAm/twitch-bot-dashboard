@@ -2,14 +2,14 @@
   <v-app>
     <v-navigation-drawer
       v-if="isLoggedIn"
-      permanent
+      v-model="drawer"
       width="280"
       color="surface"
       class="border-e"
     >
       <v-list-item
-        prepend-avatar="https://randomuser.me/api/portraits/men/85.jpg"
-        :title="user?.displayName ?? ''"
+        :prepend-avatar="user?.profile_image_url ?? ''"
+        :title="user?.display_name ?? ''"
         :subtitle="user?.email ?? ''"
         nav
         class="pa-4"
@@ -33,7 +33,8 @@
 
     <v-app-bar :elevation="2" color="primary" dark>
       <v-toolbar-title class="d-flex align-center">
-        <v-icon class="me-2" size="32">mdi-robot</v-icon>
+        <v-icon class="me-2" size="32" v-if="$vuetify.display.mdAndUp">mdi-robot</v-icon>
+        <v-icon class="me-2" size="32" @click="drawer = !drawer" v-else>mdi-reorder-horizontal</v-icon>
         <span class="text-h5 font-weight-bold">{{
           $t("dashboard.title")
         }}</span>
@@ -63,7 +64,7 @@
       <v-btn
         v-if="isLoggedIn"
         icon
-        @click="signOut(auth)"
+        @click=""
         variant="text"
         :title="$t('nav.logout')"
       >
@@ -88,17 +89,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, watch } from "vue";
 import { useTheme } from "vuetify";
 import { useI18n } from "vue-i18n";
 import AuthForm from "../components/AuthForm.vue";
 import Dashboard from "../components/Dashboard.vue";
-
-import { signOut } from "firebase/auth";
-import { useCurrentUser, useFirebaseAuth } from "vuefire";
-
-const user = useCurrentUser();
-const auth = useFirebaseAuth()!;
+import { useUserStore } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
 
 // Internationalization
 const { locale } = useI18n();
@@ -113,9 +110,9 @@ const themeIcon = computed(() =>
 
 // Navigation
 const selectedMenuItem = ref("overview");
+const drawer = ref(true);
 
-// Authentication state
-const isLoggedIn = computed(() => !!user.value);
+const { isLoggedIn, user } = storeToRefs(useUserStore());
 
 // Language options
 const languageOptions = [
@@ -133,7 +130,7 @@ const menuItems = [
     value: "moderation",
   },
   { title: "nav.analytics", icon: "mdi-chart-line", value: "analytics" },
-  { title: "nav.streamTools", icon: "mdi-video", value: "tools" },
+  // { title: "nav.streamTools", icon: "mdi-video", value: "tools" },
   { title: "nav.aiSettings", icon: "mdi-brain", value: "ai-settings" },
   { title: "nav.settings", icon: "mdi-cog", value: "settings" },
 ];
@@ -142,24 +139,11 @@ const menuItems = [
 const toggleTheme = () => {
   theme.global.name.value = theme.global.current.value.dark ? "light" : "dark";
 };
-const logout = () => {
-  signOut(auth);
-};
 
 const changeLanguage = (newLanguage: string) => {
   locale.value = newLanguage;
   localStorage.setItem("language", newLanguage);
 };
-
-// // Check for existing session on app load
-// onMounted(() => {
-//   const storedAuth = localStorage.getItem("isLoggedIn");
-//   const storedProfile = localStorage.getItem("userProfile");
-
-//   if (storedAuth === "true" && storedProfile) {
-//     userProfile.value = JSON.parse(storedProfile);
-//   }
-// });
 </script>
 
 <style lang="scss" scoped>

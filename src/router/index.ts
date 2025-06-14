@@ -1,41 +1,41 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import MainLayout from '../views/MainLayout.vue'
-import TwitchCallback from '../views/TwitchCallback.vue'
+import { createRouter, createWebHistory } from "vue-router";
+import MainLayout from "../views/MainLayout.vue";
+import TwitchCallback from "../views/TwitchCallback.vue";
 
 const routes = [
   {
-    path: '/',
-    name: 'Dashboard',
+    path: "/",
+    name: "Dashboard",
     component: MainLayout,
     meta: {
-      title: 'TwitchBot Dashboard'
-    }
+      title: "TwitchBot Dashboard",
+    },
   },
   {
-    path: '/auth/twitch/callback',
-    name: 'TwitchCallback',
+    path: "/auth/twitch/callback",
+    name: "TwitchCallback",
     component: TwitchCallback,
     meta: {
-      title: 'Twitch Authentication'
-    }
+      title: "Twitch Authentication",
+    },
   },
   {
     // Catch all route - redirect to dashboard
-    path: '/:pathMatch(.*)*',
-    redirect: '/'
-  }
-]
+    path: "/:pathMatch(.*)*",
+    redirect: "/",
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
-})
+  routes,
+});
 
 // Navigation guard to set page title
 router.beforeEach((to) => {
   if (to.meta?.title) {
-    document.title = to.meta.title as string
+    document.title = to.meta.title as string;
   }
-})
+});
 
-export default router 
+export default router;

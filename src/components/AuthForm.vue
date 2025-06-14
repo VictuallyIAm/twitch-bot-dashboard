@@ -42,34 +42,29 @@
   </v-card>
 </template>
 
-<script lang="ts">
-import { OAuthProvider } from "firebase/auth";
-
-const twitchProvider = new OAuthProvider("oidc.twitch");
-twitchProvider.addScope("user:read:email");
-twitchProvider.addScope("user:read:follows");
-twitchProvider.addScope("user:read:subscriptions");
-twitchProvider.addScope("user:read:blocked_users");
-twitchProvider.addScope("user:read:chat");
-
-</script>
-
 <script setup lang="ts">
 import { ref } from "vue";
-import { signInWithPopup, signOut } from "firebase/auth";
-import { useCurrentUser, useFirebaseAuth } from "vuefire";
 
-const auth = useFirebaseAuth()!;
 const error = ref(null);
 const loading = ref(false);
 
 function signinPopup() {
   error.value = null;
   loading.value = true;
-  signInWithPopup(auth, twitchProvider).catch((reason) => {
-    console.error("Failed sign", reason);
-    error.value = reason;
-  });
+  
+  const state = Math.random().toString(36).substring(2);
+  localStorage.setItem("twitch_oauth_state", state);
+  const twitchOAuthUrl =
+    `https://id.twitch.tv/oauth2/authorize?` +
+    `client_id=66npg4ky8uovt9yhvzujh35fgol9rt&` +
+    `redirect_uri=${encodeURIComponent(
+      "https://ttv-bot-dashboard.firebaseapp.com/auth/twitch/callback"
+    )}&` +
+    `response_type=token&` +
+    `scope=user:read:email&` +
+    `state=${state}`;
+
+  window.location.href = twitchOAuthUrl;
   loading.value = false;
 }
 </script>

@@ -13,6 +13,19 @@ import { createVuetify } from "vuetify";
 
 // https://vuetifyjs.com/en/introduction/why-vuetify/#feature-guides
 export default createVuetify({
+  defaults: {
+    VSwitch: {
+      hideDetails: true,
+    },
+    VTextField: {
+      hideDetails: true,
+      density: "compact",
+    },
+    VSelect: {
+      hideDetails: true,
+      density: "compact",
+    },
+  },
   theme: {
     defaultTheme: "dark",
     themes: {

@@ -1,5 +1,10 @@
 <template>
-  <div>
+  <div v-if="!userBotSettings">
+    <v-skeleton-loader type="card" />
+    <v-skeleton-loader type="card" />
+    <v-skeleton-loader type="card" />
+  </div>
+  <div v-else>
     <v-row class="mb-6">
       <v-col cols="12">
         <h1 class="text-h3 font-weight-bold mb-2">
@@ -20,40 +25,29 @@
           </v-card-title>
           <v-card-text>
             <v-switch
-              v-model="aiSettings.enabled"
+              v-model="userBotSettings.aiSettings.idAIEnabled"
               :label="$t('aiSettings.enableAi')"
               color="primary"
               class="mb-4"
             ></v-switch>
 
             <v-select
-              v-model="aiSettings.model"
+              v-model="userBotSettings.aiSettings.model"
               :label="$t('aiSettings.aiModel')"
               :items="aiModels"
               variant="outlined"
-              :disabled="!aiSettings.enabled"
+              :disabled="!userBotSettings.aiSettings.idAIEnabled"
               class="mb-4"
             ></v-select>
 
             <v-text-field
-              v-model="aiSettings.apiKey"
-              :label="$t('aiSettings.openaiApiKey')"
-              type="password"
-              variant="outlined"
-              :disabled="!aiSettings.enabled"
-              :hint="$t('aiSettings.apiKeyHint')"
-              persistent-hint
-              class="mb-4"
-            ></v-text-field>
-
-            <v-text-field
-              v-model.number="aiSettings.maxTokens"
+              v-model.number="userBotSettings.aiSettings.maxTokens"
               :label="$t('aiSettings.maxResponseTokens')"
               type="number"
               variant="outlined"
               min="50"
               max="500"
-              :disabled="!aiSettings.enabled"
+              :disabled="!userBotSettings.aiSettings.idAIEnabled"
               class="mb-4"
             ></v-text-field>
 
@@ -62,11 +56,11 @@
                 $t("aiSettings.creativityLevel")
               }}</v-label>
               <v-slider
-                v-model="aiSettings.temperature"
+                v-model="userBotSettings.aiSettings.creativity"
                 min="0"
                 max="1"
                 step="0.1"
-                :disabled="!aiSettings.enabled"
+                :disabled="!userBotSettings.aiSettings.idAIEnabled"
                 thumb-label
                 class="mb-2"
               ></v-slider>
@@ -84,40 +78,23 @@
           </v-card-title>
           <v-card-text>
             <v-text-field
-              v-model.number="aiSettings.cooldown"
-              :label="$t('aiSettings.aiResponseCooldown')"
+              v-model.number="userBotSettings.aiSettings.requestsPerMinute"
+              :label="$t('aiSettings.aiResponseLimit')"
               type="number"
               variant="outlined"
               min="5"
               max="300"
-              :disabled="!aiSettings.enabled"
+              :disabled="!userBotSettings.aiSettings.idAIEnabled"
               class="mb-4"
             ></v-text-field>
 
             <v-switch
-              v-model="aiSettings.moderatorOnly"
+              v-model="userBotSettings.aiSettings.moderatorOnly"
               :label="$t('aiSettings.moderatorOnlyTriggers')"
               color="warning"
-              :disabled="!aiSettings.enabled"
+              :disabled="!userBotSettings.aiSettings.idAIEnabled"
               class="mb-4"
             ></v-switch>
-
-            <v-switch
-              v-model="aiSettings.filterProfanity"
-              :label="$t('aiSettings.filterProfanity')"
-              color="error"
-              :disabled="!aiSettings.enabled"
-              class="mb-4"
-            ></v-switch>
-
-            <v-text-field
-              v-model="aiSettings.triggerWord"
-              :label="$t('aiSettings.aiTriggerWord')"
-              variant="outlined"
-              :disabled="!aiSettings.enabled"
-              :hint="$t('aiSettings.triggerWordHint')"
-              persistent-hint
-            ></v-text-field>
           </v-card-text>
         </v-card>
       </v-col>
@@ -128,20 +105,18 @@
             <v-icon class="me-2">mdi-comedy</v-icon>
             {{ $t("aiSettings.personalitySettings") }}
           </v-card-title>
-          <v-card-text>
+          <v-card-text class="mt-4">
             <div class="mb-4">
               <v-label class="mb-2">
-                {{
-                  $t("aiSettings.sarcasmLevel", { level: aiSettings.sarcasm })
-                }}
+                {{ $t("aiSettings.sarcasmLevel") }}
                 😏
               </v-label>
               <v-slider
-                v-model="aiSettings.sarcasm"
+                v-model="userBotSettings.aiSettings.sarcasm"
                 min="0"
                 max="100"
                 step="5"
-                :disabled="!aiSettings.enabled"
+                :disabled="!userBotSettings.aiSettings.idAIEnabled"
                 thumb-label
                 color="purple"
               ></v-slider>
@@ -149,17 +124,15 @@
 
             <div class="mb-4">
               <v-label class="mb-2">
-                {{
-                  $t("aiSettings.humorLevel", { level: aiSettings.humor })
-                }}
+                {{ $t("aiSettings.humorLevel") }}
                 😄
               </v-label>
               <v-slider
-                v-model="aiSettings.humor"
+                v-model="userBotSettings.aiSettings.humor"
                 min="0"
                 max="100"
                 step="5"
-                :disabled="!aiSettings.enabled"
+                :disabled="!userBotSettings.aiSettings.idAIEnabled"
                 thumb-label
                 color="orange"
               ></v-slider>
@@ -167,19 +140,15 @@
 
             <div class="mb-4">
               <v-label class="mb-2">
-                {{
-                  $t("aiSettings.friendliness", {
-                    level: aiSettings.friendliness,
-                  })
-                }}
+                {{ $t("aiSettings.friendliness") }}
                 😊
               </v-label>
               <v-slider
-                v-model="aiSettings.friendliness"
+                v-model="userBotSettings.aiSettings.friendliness"
                 min="0"
                 max="100"
                 step="5"
-                :disabled="!aiSettings.enabled"
+                :disabled="!userBotSettings.aiSettings.idAIEnabled"
                 thumb-label
                 color="green"
               ></v-slider>
@@ -194,11 +163,11 @@
           </v-card-title>
           <v-card-text>
             <v-textarea
-              v-model="aiSettings.systemPrompt"
+              v-model="userBotSettings.aiSettings.systemPrompt"
               :label="$t('aiSettings.systemPrompt')"
               variant="outlined"
               rows="8"
-              :disabled="!aiSettings.enabled"
+              :disabled="!userBotSettings.aiSettings.idAIEnabled"
               :hint="$t('aiSettings.systemPromptHint')"
               persistent-hint
               class="mb-4"
@@ -209,7 +178,7 @@
                 color="primary"
                 prepend-icon="mdi-content-save"
                 @click="saveSettings"
-                :disabled="!aiSettings.enabled"
+                :disabled="!userBotSettings.aiSettings.idAIEnabled"
               >
                 {{ $t("aiSettings.saveAiSettings") }}
               </v-btn>
@@ -218,7 +187,7 @@
                 variant="outlined"
                 prepend-icon="mdi-restore"
                 @click="resetToDefaults"
-                :disabled="!aiSettings.enabled"
+                :disabled="!userBotSettings.aiSettings.idAIEnabled"
               >
                 {{ $t("aiSettings.resetToDefaults") }}
               </v-btn>
@@ -228,19 +197,19 @@
       </v-col>
     </v-row>
 
-    <v-row v-if="aiSettings.enabled">
+    <v-row v-if="userBotSettings.aiSettings.idAIEnabled">
       <v-col cols="12">
         <v-card>
           <v-card-title>
             <v-icon class="me-2">mdi-test-tube</v-icon>
             {{ $t("aiSettings.testAiResponse") }}
           </v-card-title>
-          <v-card-text>
+          <v-card-text class="mt-4">
             <v-text-field
               v-model="testMessage"
               :label="$t('aiSettings.testMessage')"
               variant="outlined"
-              :disabled="!aiSettings.enabled"
+              :disabled="!userBotSettings.aiSettings.idAIEnabled"
               class="mb-4"
               @keyup.enter="testAiResponse"
             ></v-text-field>
@@ -249,7 +218,9 @@
               color="success"
               prepend-icon="mdi-play"
               @click="testAiResponse"
-              :disabled="!aiSettings.enabled || !testMessage.trim()"
+              :disabled="
+                !userBotSettings.aiSettings.idAIEnabled || !testMessage.trim()
+              "
               :loading="testLoading"
               class="mb-4"
               block
@@ -273,44 +244,17 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useI18n } from "vue-i18n";
+import { useUserStore } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
 
 const { t } = useI18n();
+const userStore = useUserStore();
+const { userBotSettings } = storeToRefs(userStore);
 
 // Data
 const testMessage = ref("");
 const testResponse = ref("");
 const testLoading = ref(false);
-
-const aiSettings = ref({
-  enabled: false,
-  model: "gpt-3.5-turbo",
-  apiKey: "",
-  maxTokens: 150,
-  temperature: 0.7,
-  cooldown: 30,
-  moderatorOnly: false,
-  filterProfanity: true,
-  triggerWord: "bot",
-  sarcasm: 25,
-  humor: 50,
-  friendliness: 75,
-  systemPrompt: `You are a helpful and entertaining Twitch chat bot. Your role is to:
-
-1. Engage with viewers in a friendly and welcoming manner
-2. Answer questions about the stream and streamer
-3. Provide helpful information when requested
-4. Keep the chat positive and fun
-5. Use appropriate humor and personality
-
-Guidelines:
-- Keep responses concise (1-2 sentences max)
-- Match the energy of the chat
-- Be respectful and inclusive
-- Avoid controversial topics
-- Use emotes and Twitch culture appropriately
-
-Remember: You represent the streamer and their community!`,
-});
 
 const aiModels = computed(() => [
   { title: t("aiSettings.gpt35Turbo"), value: "gpt-3.5-turbo" },
@@ -318,75 +262,16 @@ const aiModels = computed(() => [
   { title: t("aiSettings.gpt4Turbo"), value: "gpt-4-turbo" },
 ]);
 
-// Methods
 const saveSettings = () => {
-  console.log("AI settings saved:", aiSettings.value);
-  // Here you would typically save to localStorage or send to backend
+  console.log("saveSettings");
 };
 
 const resetToDefaults = () => {
-  aiSettings.value = {
-    enabled: false,
-    model: "gpt-3.5-turbo",
-    apiKey: "",
-    maxTokens: 150,
-    temperature: 0.7,
-    cooldown: 30,
-    moderatorOnly: false,
-    filterProfanity: true,
-    triggerWord: "bot",
-    sarcasm: 25,
-    humor: 50,
-    friendliness: 75,
-    systemPrompt: `You are a helpful and entertaining Twitch chat bot. Your role is to:
-
-1. Engage with viewers in a friendly and welcoming manner
-2. Answer questions about the stream and streamer
-3. Provide helpful information when requested
-4. Keep the chat positive and fun
-5. Use appropriate humor and personality
-
-Guidelines:
-- Keep responses concise (1-2 sentences max)
-- Match the energy of the chat
-- Be respectful and inclusive
-- Avoid controversial topics
-- Use emotes and Twitch culture appropriately
-
-Remember: You represent the streamer and their community!`,
-  };
+  console.log("resetToDefaults");
 };
 
-const testAiResponse = async () => {
-  if (!testMessage.value.trim()) return;
-
-  testLoading.value = true;
-
-  // Simulate AI response based on personality settings
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  const responses = [
-    "Hey there! Thanks for testing me out! 😊",
-    "I'm working perfectly! Ready to chat with your viewers! 🤖",
-    "Looking good! Your AI bot is ready for action! ⚡",
-    "All systems operational! Let's make this stream amazing! 🎮",
-  ];
-
-  // Add personality based on settings
-  let response = responses[Math.floor(Math.random() * responses.length)];
-
-  if (aiSettings.value.sarcasm > 70) {
-    response = "Oh wow, another test message. How original! 😏 " + response;
-  } else if (aiSettings.value.humor > 70) {
-    response = "Beep boop! 🤖 " + response + " *robot noises*";
-  }
-
-  if (aiSettings.value.friendliness > 80) {
-    response = response + " Hope you're having an awesome day! 💜";
-  }
-
-  testResponse.value = response;
-  testLoading.value = false;
+const testAiResponse = () => {
+  console.log("testAiResponse");
 };
 </script>
 

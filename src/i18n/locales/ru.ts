@@ -65,7 +65,7 @@ export default {
     unknownError: "Произошла неизвестная ошибка во время аутентификации",
     goToDashboard: "Перейти к панели управления",
     backToLogin: "Вернуться к входу",
-    welcomeToBot: "Добро пожаловать в TwitchBot",
+    welcomeToBot: "Добро пожаловать в панель управления Jessi",
     twitchOnlyDescription:
       "Подключите свой аккаунт Twitch для доступа к панели управления ботом",
     loginWithTwitch: "Войти через Twitch",
@@ -74,19 +74,19 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: "Панель Управления TwitchBot",
+    title: "Панель Управления Jessi",
     overview: "Обзор Панели Управления",
     welcomeMessage: "Добро пожаловать в центр управления Twitch Bot",
-    activeViewers: "Активные Зрители",
-    botCommands: "Команды Бота",
-    messagesToday: "Сообщений Сегодня",
-    streamTime: "Время Стрима",
+    activeUsers: "Зрители использовавшие бота",
+    botCommands: "Всего команд бота",
+    messagesToday: "Сообщений бота за сегодня",
     recentActivity: "Недавняя Активность",
     quickActions: "Быстрые Действия",
     startBot: "Запустить Бота",
     clearChat: "Очистить Чат",
     enableSlowMode: "Включить Медленный Режим",
     runGiveaway: "Запустить Розыгрыш",
+    noRecentActivity: "Нет недавней активности",
   },
 
   // Bot Commands
@@ -139,6 +139,7 @@ export default {
     noBannedWords: "Запрещенные слова не настроены",
     addBannedWord: "Добавить Запрещенное Слово",
     wordToBan: "Слово для запрета",
+    saveSettings: "Сохранить Настройки",
   },
 
   // Analytics
@@ -159,7 +160,9 @@ export default {
     topChatters: "Топ Чаттеры",
     usedTimes: "Использовано {count} раз",
     messages: "{count} сообщений",
-  },
+    noCommands: "Команды еще не использовались",
+    noChatters: "Чаттеры еще не использовали команды",
+    },
 
   // Stream Tools
   streamTools: {
@@ -206,7 +209,7 @@ export default {
     creativityLevel: "Уровень Креативности",
     creativityHint: "0 = Более сфокусированно, 1 = Более креативно",
     responseSettings: "Настройки Ответов",
-    aiResponseCooldown: "Кулдаун Ответов ИИ (секунды)",
+    aiResponseLimit: "Лимит Ответов ИИ на пользователя/минуту",
     moderatorOnlyTriggers: "Триггеры Только для Модераторов",
     filterProfanity: "Фильтровать Нецензурную Лексику",
     aiTriggerWord: "Слово-Триггер ИИ",
@@ -245,11 +248,11 @@ export default {
     appearance: "Внешний Вид",
     theme: "Тема",
     language: "Язык",
-    notifications: "Уведомления",
+    notifications: "Реагировать на",
     newFollowers: "Новые Подписчики",
     donations: "Донаты",
     subscriptions: "Подписки",
-    moderationActions: "Действия Модерации",
+    raids: "Рейды",
     dataManagement: "Управление Данными",
     exportSettings: "Экспорт Настроек",
     importSettings: "Импорт Настроек",

@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app'
-import { getFirestore, collection } from 'firebase/firestore'
+import { initializeApp } from "firebase/app";
+import { getFirestore, collection } from "firebase/firestore";
 // ... other firebase imports
 
 const firebaseConfig = {
@@ -9,12 +9,12 @@ const firebaseConfig = {
   storageBucket: "ttv-bot-dashboard.firebasestorage.app",
   messagingSenderId: "193511610358",
   appId: "1:193511610358:web:79af1d387f684b5a1399d7",
-  measurementId: "G-0GL9BK9SCW"
+  measurementId: "G-0GL9BK9SCW",
 };
 export const firebaseApp = initializeApp(firebaseConfig);
 
 // used for the firestore refs
-const db = getFirestore(firebaseApp)
+const db = getFirestore(firebaseApp);
 
 // here we can export reusable database references
-export const todosRef = collection(db, 'todos')
+export const botSettingsRef = collection(db, "botSettings");

@@ -65,7 +65,7 @@ export default {
     unknownError: "An unknown error occurred during authentication",
     goToDashboard: "Go to Dashboard",
     backToLogin: "Back to Login",
-    welcomeToBot: "Welcome to TwitchBot",
+    welcomeToBot: "Welcome to Jessi's Dashboard",
     twitchOnlyDescription:
       "Connect your Twitch account to access your bot dashboard",
     loginWithTwitch: "Login with Twitch",
@@ -74,19 +74,19 @@ export default {
 
   // Dashboard
   dashboard: {
-    title: "TwitchBot Dashboard",
+    title: "Jessi's Dashboard",
     overview: "Dashboard Overview",
     welcomeMessage: "Welcome to your Twitch Bot control center",
-    activeViewers: "Active Viewers",
-    botCommands: "Bot Commands",
-    messagesToday: "Messages Today",
-    streamTime: "Stream Time",
+    activeUsers: "Chatters used bot",
+    botCommands: "Bot Commands count",
+    messagesToday: "Bot messages today",
     recentActivity: "Recent Activity",
     quickActions: "Quick Actions",
     startBot: "Start Bot",
     clearChat: "Clear Chat",
     enableSlowMode: "Enable Slow Mode",
     runGiveaway: "Run Giveaway",
+    noRecentActivity: "No recent activity",
   },
 
   // Bot Commands
@@ -138,6 +138,7 @@ export default {
     noBannedWords: "No banned words configured",
     addBannedWord: "Add Banned Word",
     wordToBan: "Word to ban",
+    saveSettings: "Save Settings",
   },
 
   // Analytics
@@ -157,6 +158,8 @@ export default {
     topChatters: "Top Chatters",
     usedTimes: "Used {count} times",
     messages: "{count} messages",
+    noCommands: "No commands used yet",
+    noChatters: "No chatters yet",
   },
 
   // Stream Tools
@@ -204,7 +207,7 @@ export default {
     creativityLevel: "Creativity Level",
     creativityHint: "0 = More focused, 1 = More creative",
     responseSettings: "Response Settings",
-    aiResponseCooldown: "AI Response Cooldown (seconds)",
+    aiResponseLimit: "AI Response limit per user/minute",
     moderatorOnlyTriggers: "Moderator Only Triggers",
     filterProfanity: "Filter Profanity",
     aiTriggerWord: "AI Trigger Word",
@@ -243,11 +246,11 @@ export default {
     appearance: "Appearance",
     theme: "Theme",
     language: "Language",
-    notifications: "Notifications",
+    notifications: "React to",
     newFollowers: "New Followers",
     donations: "Donations",
     subscriptions: "Subscriptions",
-    moderationActions: "Moderation Actions",
+    raids: "Raids",
     dataManagement: "Data Management",
     exportSettings: "Export Settings",
     importSettings: "Import Settings",
